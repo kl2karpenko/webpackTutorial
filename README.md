@@ -1,153 +1,13 @@
-# Импорт HTML и CSS
+# Кэширование и хеширование
 
-Для начала в нашей папке ```./dist``` создадим небольшой файл ```index.html```.
+Одна из наиболее распространенных проблем в разработке — реализация кэширования. Очень важно понять, как это работает, ведь вы же хотите, чтобы у ваших пользователей всегда была последняя версия кода.
 
-```html
-<html>
-  <head>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <div>Hello, world!</div>
-    <script src="main.js"></script>
-  </body>
-</html>
-```
+Одним из самых популярных способов решения проблем кеширования является добавление хеш-номера в активные (находящиеся в разработке) файлы (asset), такие как style.css и script.js.
+Хеширование необходимо, чтобы браузер «научился» запрашивать только измененные файлы.
 
-Как видите, здесь мы импортируем ```style.css```. Давайте настроим его! Как я уже упомянула, для Webpack у нас есть только одна точка входа. Так куда же мы поставим наш css?
-
-Создаем ```style.css``` в нашей папке ```./src```:
-
-```css
-div {
-  color: red;
-}
-```
-
-Не забываем включить это в js-файл:
+Webpack 4 имеет встроенные функции, реализованные через chunkhash. Это можно сделать следующим образом:
 
 ```javascript
-import "./style.css";
-console.log("hello, world");
-```
-
-В Webpack создайте новое правило для файлов css:
-
-```
-// Webpack v4
-const path = require('path');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
-module.exports = {
-  entry: { main: './src/index.js' },
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'main.js'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "babel-loader"
-        }
-      },
-      {
-        test: /\.css$/,
-        use: ExtractTextPlugin.extract(
-          {
-            fallback: 'style-loader',
-            use: ['css-loader']
-          })
-      }
-    ]
-  }
-}
-```
-
-В терминале запустите:
-
-```
-$ npm install extract-text-webpack-plugin --save-dev
-$ npm install style-loader css-loader --save-dev
-```
-
-Необходимо использовать ExtractTextPlugin для компиляции нашего CSS. Как видите, для ```.css``` мы также добавили новое правило.
-
-Наш webpack.config должен выглядеть так:
-
-```
-// Webpack v4
-const path = require('path');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
-module.exports = {
-  entry: { main: './src/index.js' },
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'main.js'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "babel-loader"
-        }
-      },
-      {
-        test: /\.css$/,
-        use: ExtractTextPlugin.extract(
-          {
-            fallback: 'style-loader',
-            use: ['css-loader']
-          })
-      }
-    ]
-  },
-  plugins: [
-    new ExtractTextPlugin({filename: 'style.css'})
-  ]
-};
-```
-
-Затем ваш css код должен скомпилироваться в ```./dist/style.css```.
-Теперь ваш ```style.css``` должен выводиться в папку ```./dist```:
-
-
-### Поддержка SCSS
-
-Очень часто разрабатываются веб-сайты с SASS и PostCSS. Они весьма полезны. Поэтому мы сперва включим поддержку SASS. Переименуем наш ./src/style.css и создадим другую папку для хранения файлов .scss. Теперь необходимо добавить поддержку форматирования .scss.
-
-```
-$ npm install node-sass sass-loader --save-dev
-```
-
-## Шаблон HTML
-
-Теперь давайте создадим html-шаблон файла. Добавьте файл ```index.html``` в ```./src``` с точно такой же структурой.
-
-```html
-<html>
-  <head>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <div>Hello, world!</div>
-    <script src="main.js"></script>
-  </body>
-</html>
-```
-
-Чтобы использовать этот файл в качестве шаблона, нам понадобится html-плагин.
-
-```
-$ npm install html-webpack-plugin --save-dev
-```
-
-Добавьте его в ваш вэбпак-файл:
-
-```
 // Webpack v4
 const path = require('path');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -156,7 +16,7 @@ module.exports = {
   entry: { main: './src/index.js' },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'main.js'
+    filename: '[name].[chunkhash].js'
   },
   module: {
     rules: [
@@ -179,25 +39,121 @@ module.exports = {
   },
   plugins: [
     new ExtractTextPlugin(
-      {filename: 'style.css'}
+      {filename: 'style.[chunkhash].css', disable: false, allChunks: true}
     ),
     new HtmlWebpackPlugin({
       inject: false,
       hash: true,
       template: './src/index.html',
       filename: 'index.html'
-    })
+    }),
   ]
 };
 ```
 
-Теперь ваш файл из ```./src/index.html``` стал шаблоном для конечного файла ```index.html```.
+В файл ```./src/index.html``` добавьте:
 
-Чтобы убедиться, что все работает, удалите все файлы из папки ```./dist``` и саму папку. Затем запустите dev-скрипт:
+```html
+<html>
+  <head>
+    <link rel="stylesheet" href="<%=htmlWebpackPlugin.files.chunks.main.css %>">
+  </head>
+  <body>
+    <div>Hello, world!</div>
+    <script src="<%= htmlWebpackPlugin.files.chunks.main.entry %>"></script>
+  </body>
+</html>
+```
+
+С помощью такого синтаксиса ваш шаблон «научится» использовать хешированные файлы. Это новая фича, реализованная после возникновения этой проблемы.
+
+Мы будем использовать описанный там ```htmlWebpackPlugin.files.chunks.main```.
+
+Теперь в нашей папке ```./dist``` есть файл ```index.html```:
+
+Далее, если мы ничего не изменим в файлах .js и .css и запустим:
 
 ```
-$ rm -rf ./dist
-$ npm run dev
+npm run dev
 ```
 
-Вы увидите, что появилась папка ./dist, и в ней 3 файла: index.html, style.css, script.js.
+То увидим, что, независимо от количества запусков, числа в хешах должны быть идентичны в обоих файлах.
+
+### Интегрирование PostCSS
+
+
+Чтобы выходной css-файл был безупречным, мы можем добавить наверх PostCSS.
+
+PostCSS предоставляет вам autoprefixer, cssnano и другие приятные и удобные штуковины. Буду продвигать то, что использую регулярно. Нам понадобится postcss-загрузчик. Также по мере необходимости установим autoprefixer.
+
+```
+npm install postcss-loader --save-dev
+npm i -D autoprefixer
+```
+
+Создайте ```postcss.config.js```, где вам требуюся соответствующие плагины, вставьте:
+
+```
+module.exports = {
+    plugins: [
+      require('autoprefixer')
+    ]
+}
+```
+
+Теперь наш ```webpack.config.js``` должен выглядеть так:
+
+```
+// Webpack v4
+const path = require('path');
+// const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const WebpackMd5Hash = require('webpack-md5-hash');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+module.exports = {
+  entry: { main: './src/index.js' },
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: '[name].[chunkhash].js'
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader"
+        }
+      },
+      {
+        test: /\.scss$/,
+        use:  [  'style-loader', MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader', 'sass-loader']
+      }
+    ]
+  },
+  plugins: [
+    new CleanWebpackPlugin('dist', {} ),
+    // new ExtractTextPlugin(
+    //   {filename: 'style.[hash].css', disable: false, allChunks: true }
+    // ),
+    new MiniCssExtractPlugin({
+      filename: 'style.[contenthash].css',
+    }),
+    new HtmlWebpackPlugin({
+      inject: false,
+      hash: true,
+      template: './src/index.html',
+      filename: 'index.html'
+    }),
+    new WebpackMd5Hash()
+  ]
+};
+```
+
+
+Пожалуйста, обратите внимание на порядок плагинов, которые мы используем для ```.scss```
+
+```
+use: [ 'style-loader', MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader', 'sass-loader']
+```
+
