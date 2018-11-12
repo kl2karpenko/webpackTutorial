@@ -4,7 +4,8 @@
   "description": "Webpack - quick start",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "dev": "webpack --mode development ./src/index.js --output ./dist/main.js",
+    "build": "webpack --mode production ./src/index.js --output ./dist/main.js"
   },
   "repository": {
     "type": "git",
