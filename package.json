@@ -1,0 +1,22 @@
+{
+  "name": "webpack-tutorial",
+  "version": "0.0.1",
+  "description": "Webpack - quick start",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/kl2karpenko/webpackTutorial.git"
+  },
+  "keywords": [
+    "webpack"
+  ],
+  "author": "kl2karpenko",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kl2karpenko/webpackTutorial/issues"
+  },
+  "homepage": "https://github.com/kl2karpenko/webpackTutorial#readme"
+}
